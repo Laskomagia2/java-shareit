@@ -24,18 +24,22 @@ public class UserService {
         log.debug("Пользователь с id {} создан", newUser.getId());
         return UserMapper.mapToUserDto(newUser);
     }
+
     public Collection<UserDto> getUsers() {
         log.debug("Запрос на получение всех пользователей");
         return userStorage.getUsers().stream().map(UserMapper::mapToUserDto).toList();
     }
+
     public UserDto getUserById(Long id) {
         log.debug("Запрос на получение пользователя с id {}", id);
         return UserMapper.mapToUserDto(userStorage.getUserById(id));
     }
+
     public UserDto updateUser(Long userId, UserUpdateRequest newUser) {
         log.debug("Запрос на обновление пользователя с id {}", userId);
         return UserMapper.mapToUserDto(userStorage.updateUser(userId, newUser));
     }
+
     public void deleteUser(Long id) {
         log.debug("Запрос на удаление пользователя с id {}", id);
         userStorage.deleteUser(id);

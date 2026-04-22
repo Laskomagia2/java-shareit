@@ -44,7 +44,7 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItemById (@PathVariable @Positive Long itemId) {
+    public ItemDto getItemById(@PathVariable @Positive Long itemId) {
         return itemService.getItemById(itemId);
     }
 

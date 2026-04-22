@@ -9,9 +9,13 @@ import java.util.Collection;
 public interface UserStorage {
 
     public User postUser(UserCreateRequest user);
+
     public Collection<User> getUsers();
+
     public User getUserById(Long id);
+
     public User updateUser(Long userId, UserUpdateRequest newUser);
+
     public void deleteUser(Long id);
 
 }

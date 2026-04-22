@@ -27,19 +27,23 @@ public class ItemService {
         log.debug("Вещь с id {} создана пользователем {}", item.getId(), ownerId);
         return ItemMapper.mapToItemDto(item);
     }
+
     public Collection<ItemDto> getItemsByOwner(Long ownerId) {
         log.debug("Запрос на получение вещей пользователя {}", ownerId);
         userService.getUserById(ownerId);
         return itemStorage.getItemsByOwner(ownerId).stream().map(ItemMapper::mapToItemDto).toList();
     }
+
     public ItemDto getItemById(Long id) {
         log.debug("Запрос на получение вещи с id {}", id);
         return ItemMapper.mapToItemDto(itemStorage.getItemById(id));
     }
+
     public Collection<ItemDto> getItemsByDescription(String desc) {
         log.debug("Запрос на получение вещи с описанием {}", desc);
         return itemStorage.getItemsByDescription(desc).stream().map(ItemMapper::mapToItemDto).toList();
     }
+
     public ItemDto updateItem(Long ownerId, Long itemId, ItemUpdateRequest newItem) {
         log.debug("Запрос на обновление вещи с id: {}, пользователем {}", itemId, ownerId);
         userService.getUserById(ownerId);
