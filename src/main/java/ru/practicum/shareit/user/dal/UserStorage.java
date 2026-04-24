@@ -8,14 +8,14 @@ import java.util.Collection;
 
 public interface UserStorage {
 
-    public User postUser(UserCreateRequest user);
+    User postUser(UserCreateRequest user);
 
-    public Collection<User> getUsers();
+    Collection<User> getUsers();
 
-    public User getUserById(Long id);
+    User getUserById(Long id);
 
-    public User updateUser(Long userId, UserUpdateRequest newUser);
+    User updateUser(Long userId, UserUpdateRequest newUser);
 
-    public void deleteUser(Long id);
+    void deleteUser(Long id);
 
 }
