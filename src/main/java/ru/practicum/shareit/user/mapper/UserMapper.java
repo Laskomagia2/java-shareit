@@ -8,9 +8,16 @@ import ru.practicum.shareit.user.dto.UserDto;
 @UtilityClass
 public final class UserMapper {
 
-    public User mapToUser(UserCreateRequest request, Long id) {
+    public User mapToUser(UserCreateRequest request) {
         return User.builder()
-                .id(id)
+                .email(request.getEmail())
+                .name(request.getName())
+                .build();
+    }
+
+    public User mapToUser(UserDto request) {
+        return User.builder()
+                .id(request.getId())
                 .email(request.getEmail())
                 .name(request.getName())
                 .build();

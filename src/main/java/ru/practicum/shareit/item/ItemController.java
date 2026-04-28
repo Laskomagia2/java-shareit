@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.comment.dto.CommentDto;
+import ru.practicum.shareit.item.comment.dto.CommentRequest;
 import ru.practicum.shareit.item.dto.ItemCreateRequest;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemUpdateRequest;
@@ -29,6 +31,15 @@ public class ItemController {
         return itemService.postItem(userId, request);
     }
 
+    @PostMapping("/{itemId}/comment")
+    public CommentDto postCommentForItem(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @PathVariable @Positive Long itemId,
+            @Valid @RequestBody CommentRequest request
+    ) {
+        return itemService.postComment(userId, itemId, request);
+    }
+
     @PatchMapping("/{itemId}")
     public ItemDto updateItem(
             @RequestHeader(USER_ID_HEADER) Long userId,
@@ -44,8 +55,11 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItemById(@PathVariable @Positive Long itemId) {
-        return itemService.getItemById(itemId);
+    public ItemDto getItemById(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @PathVariable @Positive Long itemId
+    ) {
+        return itemService.getItemById(itemId, userId);
     }
 
     @GetMapping("/search")

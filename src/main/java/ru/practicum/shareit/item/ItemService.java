@@ -3,50 +3,142 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.item.dal.ItemStorage;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.dal.BookingRepository;
+import ru.practicum.shareit.booking.enums.Status;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationBadRequestException;
+import ru.practicum.shareit.item.comment.dal.CommentRepository;
+import ru.practicum.shareit.item.comment.dto.CommentDto;
+import ru.practicum.shareit.item.comment.dto.CommentRequest;
+import ru.practicum.shareit.item.comment.model.Comment;
+import ru.practicum.shareit.item.dal.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemCreateRequest;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemUpdateRequest;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.dal.UserRepository;
+import ru.practicum.shareit.user.model.User;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ItemService {
-    private final ItemStorage itemStorage;
-    private final UserService userService;
+    private final ItemRepository itemStorage;
+    private final UserRepository userStorage;
+    private final BookingRepository bookingStorage;
+    private final CommentRepository commentStorage;
 
+    @Transactional
     public ItemDto postItem(Long ownerId, ItemCreateRequest request) {
-        log.debug("Запрос на создание вещи пользователем {}", ownerId);
-        userService.getUserById(ownerId);
-        Item item = itemStorage.postItem(ownerId, request);
-        log.debug("Вещь с id {} создана пользователем {}", item.getId(), ownerId);
-        return ItemMapper.mapToItemDto(item);
+        User owner = userStorage.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("Владелец с id " + ownerId + " не найден"));
+        Item item = ItemMapper.mapToItem(request);
+        item.setOwner(owner);
+        return ItemMapper.mapToItemDto(itemStorage.save(item));
     }
 
     public Collection<ItemDto> getItemsByOwner(Long ownerId) {
-        log.debug("Запрос на получение вещей пользователя {}", ownerId);
-        userService.getUserById(ownerId);
-        return itemStorage.getItemsByOwner(ownerId).stream().map(ItemMapper::mapToItemDto).toList();
+        validateUser(ownerId);
+        LocalDateTime now = LocalDateTime.now();
+
+        return itemStorage.findByOwnerId(ownerId).stream()
+                .map(item -> constructDto(item, ownerId, now))
+                .toList();
     }
 
-    public ItemDto getItemById(Long id) {
-        log.debug("Запрос на получение вещи с id {}", id);
-        return ItemMapper.mapToItemDto(itemStorage.getItemById(id));
+    public ItemDto getItemById(Long itemId, Long userId) {
+        Item item = itemStorage.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+
+        return constructDto(item, userId, LocalDateTime.now());
     }
 
     public Collection<ItemDto> getItemsByDescription(String desc) {
-        log.debug("Запрос на получение вещи с описанием {}", desc);
-        return itemStorage.getItemsByDescription(desc).stream().map(ItemMapper::mapToItemDto).toList();
+        if (desc == null || desc.isBlank()) {
+            return new ArrayList<>();
+        }
+        return itemStorage.search(desc).stream()
+                .map(ItemMapper::mapToItemDto)
+                .toList();
     }
 
+    @Transactional
     public ItemDto updateItem(Long ownerId, Long itemId, ItemUpdateRequest newItem) {
-        log.debug("Запрос на обновление вещи с id: {}, пользователем {}", itemId, ownerId);
-        userService.getUserById(ownerId);
-        return ItemMapper.mapToItemDto(itemStorage.updateItem(ownerId, itemId, newItem));
+        Item item = itemStorage.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+
+        if (!item.getOwner().getId().equals(ownerId)) {
+            throw new NotFoundException("У пользователя нет прав на редактирование этой вещи");
+        }
+
+        if (newItem.getName() != null && !newItem.getName().isBlank()) item.setName(newItem.getName());
+        if (newItem.getDescription() != null && !newItem.getDescription().isBlank()) item.setDescription(newItem.getDescription());
+        if (newItem.getAvailable() != null) item.setAvailable(newItem.getAvailable());
+
+        return ItemMapper.mapToItemDto(itemStorage.save(item));
+    }
+
+    @Transactional
+    public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now)) {
+            throw new ValidationBadRequestException("Нельзя оставить комментарий без завершенного бронирования");
+        }
+
+        Item item = itemStorage.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
+        User author = userStorage.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+
+        Comment comment = Comment.builder()
+                .text(request.getText())
+                .item(item)
+                .author(author)
+                .created(now)
+                .build();
+
+        return mapToCommentDto(commentStorage.save(comment));
+    }
+
+    private ItemDto constructDto(Item item, Long userId, LocalDateTime now) {
+        ItemDto dto = ItemMapper.mapToItemDto(item);
+
+        dto.setComments(commentStorage.findAllByItemId(item.getId()).stream()
+                .map(this::mapToCommentDto)
+                .toList());
+
+        if (item.getOwner().getId().equals(userId)) {
+            dto.setLastBooking(bookingStorage
+                    .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(), Status.APPROVED, now)
+                    .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
+                    .orElse(null));
+
+            dto.setNextBooking(bookingStorage
+                    .findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(item.getId(), Status.APPROVED, now)
+                    .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
+                    .orElse(null));
+        }
+        return dto;
+    }
+
+    private CommentDto mapToCommentDto(Comment comment) {
+        return CommentDto.builder()
+                .id(comment.getId())
+                .text(comment.getText())
+                .authorName(comment.getAuthor().getName())
+                .created(comment.getCreated())
+                .build();
+    }
+
+    private void validateUser(Long userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь не найден");
+        }
     }
 }
