@@ -88,7 +88,7 @@ public class ItemService {
 
     @Transactional
     public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
-        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime now = LocalDateTime.now();
 
         if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now.plusSeconds(1))) {
             throw new ValidationBadRequestException("Аренда еще не завершена");
@@ -117,8 +117,9 @@ public class ItemService {
                 .map(this::mapToCommentDto)
                 .toList());
 
-        if (item.getOwner() != null && item.getOwner().getId().equals(userId)) {
+        Long ownerId = item.getOwner().getId();
 
+        if (ownerId.equals(userId)) {
             dto.setLastBooking(bookingStorage
                     .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(), Status.APPROVED, now)
                     .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
@@ -128,9 +129,6 @@ public class ItemService {
                     .findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(item.getId(), Status.APPROVED, now)
                     .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
                     .orElse(null));
-        } else {
-            dto.setLastBooking(null);
-            dto.setNextBooking(null);
         }
 
         return dto;
