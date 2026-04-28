@@ -25,7 +25,7 @@ public class UserService {
     public UserDto postUser(UserCreateRequest req) {
         log.debug("Запрос на создание пользователя");
         User newUser = userStorage.save(UserMapper.mapToUser(req));
-        log.debug("Пользователь с id {} создан", newUser.getId());
+        log.debug("Пользователь с id: {} создан", newUser.getId());
         return UserMapper.mapToUserDto(newUser);
     }
 
