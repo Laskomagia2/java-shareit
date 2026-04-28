@@ -53,6 +53,7 @@ public class ItemService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public ItemDto getItemById(Long itemId, Long userId) {
         Item item = itemStorage.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
@@ -102,7 +103,7 @@ public class ItemService {
                 .author(author)
                 .created(now)
                 .build();
-        commentStorage.flush();
+        commentStorage.flush(); //без этого падают тесты локально
 
         return mapToCommentDto(commentStorage.save(comment));
     }
@@ -110,7 +111,7 @@ public class ItemService {
     private ItemDto constructDto(Item item, Long userId, LocalDateTime now) {
         ItemDto dto = ItemMapper.mapToItemDto(item);
 
-        dto.setComments(commentStorage.findAllByItemId(item.getId()).stream()
+        dto.setComments(commentStorage.findAllByItemIdOrderByCreatedDesc(item.getId()).stream()
                 .map(this::mapToCommentDto)
                 .toList());
 
