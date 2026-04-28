@@ -88,13 +88,10 @@ public class ItemService {
 
     @Transactional
     public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
-        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime now = LocalDateTime.now();
 
-        boolean hasBooking = bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(
-                itemId, userId, Status.APPROVED, now);
-
-        if (!hasBooking) {
-            throw new ValidationBadRequestException("Message");
+        if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now.plusSeconds(1))) {
+            throw new ValidationBadRequestException("Аренда еще не завершена");
         }
 
         Item item = itemStorage.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
@@ -121,7 +118,6 @@ public class ItemService {
                 .toList());
 
         if (item.getOwner().getId().equals(userId)) {
-
             dto.setLastBooking(bookingStorage
                     .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(), Status.APPROVED, now)
                     .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
