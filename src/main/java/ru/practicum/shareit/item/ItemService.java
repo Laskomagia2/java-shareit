@@ -87,7 +87,7 @@ public class ItemService {
 
     @Transactional
     public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().withNano(0);
 
         if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now)) {
             throw new ValidationBadRequestException("Нельзя оставить комментарий без завершенного бронирования");
@@ -102,6 +102,7 @@ public class ItemService {
                 .author(author)
                 .created(now)
                 .build();
+        commentStorage.flush();
 
         return mapToCommentDto(commentStorage.save(comment));
     }
