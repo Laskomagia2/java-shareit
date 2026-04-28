@@ -29,12 +29,12 @@ public class Item {
     private Boolean available;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="owner_id", nullable = false)
+    @JoinColumn(name = "owner_id", nullable = false)
     @ToString.Exclude
     private User owner;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="request_id")
+    @JoinColumn(name = "request_id")
     @ToString.Exclude
     private ItemRequest request;
 }

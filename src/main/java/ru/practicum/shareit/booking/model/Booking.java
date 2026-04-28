@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @ToString
 @Entity
-@Table(name="bookings")
+@Table(name = "bookings")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -22,22 +22,22 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="start_date")
+    @Column(name = "start_date")
     private LocalDateTime start;
 
-    @Column(name="end_date")
+    @Column(name = "end_date")
     private LocalDateTime end;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="item_id", nullable = false)
+    @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="booker_id", nullable = false)
+    @JoinColumn(name = "booker_id", nullable = false)
     @ToString.Exclude
     private User booker;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="status", nullable = false)
+    @Column(name = "status", nullable = false)
     private Status status;
 }

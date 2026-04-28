@@ -25,7 +25,7 @@ public class BookingController {
             @Valid @RequestBody BookingCreateRequest request
     ) {
         return bookingService.postBooking(userId, request);
-    };
+    }
 
     @PatchMapping("/{bookingId}")
     public BookingDto patchBooking(
