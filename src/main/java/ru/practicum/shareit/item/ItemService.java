@@ -88,10 +88,13 @@ public class ItemService {
 
     @Transactional
     public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now.plusSeconds(1))) {
-            throw new ValidationBadRequestException("Аренда еще не завершена");
+        boolean hasBooking = bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                itemId, userId, Status.APPROVED, now);
+
+        if (!hasBooking) {
+            throw new ValidationBadRequestException("Аренда еще не завершена или не существует");
         }
 
         Item item = itemStorage.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
