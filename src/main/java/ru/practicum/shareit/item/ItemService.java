@@ -48,7 +48,7 @@ public class ItemService {
         validateUser(ownerId);
         LocalDateTime now = LocalDateTime.now();
 
-        return itemStorage.findByOwnerId(ownerId).stream()
+        return itemStorage.findByOwnerIdOrderByIdAsc(ownerId).stream()
                 .map(item -> constructDto(item, ownerId, now))
                 .toList();
     }
@@ -90,8 +90,11 @@ public class ItemService {
     public CommentDto postComment(Long userId, Long itemId, CommentRequest request) {
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        if (!bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, Status.APPROVED, now)) {
-            throw new ValidationBadRequestException("Нельзя оставить комментарий без завершенного бронирования");
+        boolean hasBooking = bookingStorage.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                itemId, userId, Status.APPROVED, now);
+
+        if (!hasBooking) {
+            throw new ValidationBadRequestException("Message");
         }
 
         Item item = itemStorage.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
@@ -103,9 +106,11 @@ public class ItemService {
                 .author(author)
                 .created(now)
                 .build();
-        commentStorage.flush(); //без этого падают тесты локально
 
-        return mapToCommentDto(commentStorage.save(comment));
+        Comment savedComment = commentStorage.save(comment);
+        commentStorage.flush();
+
+        return mapToCommentDto(savedComment);
     }
 
     private ItemDto constructDto(Item item, Long userId, LocalDateTime now) {
@@ -116,6 +121,7 @@ public class ItemService {
                 .toList());
 
         if (item.getOwner().getId().equals(userId)) {
+
             dto.setLastBooking(bookingStorage
                     .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(), Status.APPROVED, now)
                     .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
@@ -126,6 +132,7 @@ public class ItemService {
                     .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
                     .orElse(null));
         }
+
         return dto;
     }
 
