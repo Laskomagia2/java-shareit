@@ -81,8 +81,8 @@ public class ItemServiceImplIntegrationTest {
 
         BookingCreateRequest bookingCreateRequest = new BookingCreateRequest();
         bookingCreateRequest.setItemId(itemDto.getId());
-        bookingCreateRequest.setStart(LocalDateTime.now());
-        bookingCreateRequest.setEnd(LocalDateTime.now());
+        bookingCreateRequest.setStart(LocalDateTime.now().minusDays(2));
+        bookingCreateRequest.setEnd(LocalDateTime.now().minusDays(1));
 
         BookingDto bookingDto = bookingService.postBooking(user2Dto.getId(), bookingCreateRequest);
         bookingService.updateBooking(bookingDto.getId(), userDto.getId(), true);
