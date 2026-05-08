@@ -28,6 +28,6 @@ public class BookingDtoJsonTest {
         JsonContent<BookingDto> result = json.write(itemDto);
 
         assertThat(result).extractingJsonPathNumberValue("$.id").isEqualTo(1);
-        assertThat(result).extractingJsonPathStringValue("$.status").isEqualTo(Status.APPROVED.toString());
+        assertThat(result).extractingJsonPathStringValue("$.status").isEqualTo(Status.WAITING.toString());
     }
 }
