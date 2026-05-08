@@ -66,7 +66,7 @@ public class ItemRequestServiceImpl {
     public Collection<ItemRequestWithItemsDto> getAllOtherRequests(Long userId, int from, int size) {
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("created").descending());
 
-        Collection <ItemRequest> requests = requestRepository.findAllByRequestorIdNot(userId, pageable);
+        Collection<ItemRequest> requests = requestRepository.findAllByRequestorIdNot(userId, pageable);
 
         List<Long> requestsId = requests.stream()
                 .map(ItemRequest::getId)
