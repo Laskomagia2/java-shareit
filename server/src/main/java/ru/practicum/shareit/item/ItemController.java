@@ -1,0 +1,66 @@
+package ru.practicum.shareit.item;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.comment.dto.CommentDto;
+import ru.practicum.shareit.item.comment.dto.CommentRequest;
+import ru.practicum.shareit.item.dto.ItemCreateRequest;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemUpdateRequest;
+
+import java.util.Collection;
+
+@RestController
+@RequestMapping("/items")
+@RequiredArgsConstructor
+public class ItemController {
+
+    private final ItemService itemService;
+
+    public static final String USER_ID_HEADER = "X-Sharer-User-Id";
+
+    @PostMapping
+    public ItemDto postItem(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @RequestBody ItemCreateRequest request
+    ) {
+        return itemService.postItem(userId, request);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentDto postCommentForItem(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @PathVariable Long itemId,
+            @RequestBody CommentRequest request
+    ) {
+        return itemService.postComment(userId, itemId, request);
+    }
+
+    @PatchMapping("/{itemId}")
+    public ItemDto updateItem(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @RequestBody ItemUpdateRequest request,
+            @PathVariable Long itemId
+    ) {
+        return itemService.updateItem(userId, itemId, request);
+    }
+
+    @GetMapping
+    public Collection<ItemDto> getItems(@RequestHeader(USER_ID_HEADER) Long userId) {
+        return itemService.getItemsByOwner(userId);
+    }
+
+    @GetMapping("/{itemId}")
+    public ItemDto getItemById(
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @PathVariable Long itemId
+    ) {
+        return itemService.getItemById(itemId, userId);
+    }
+
+    @GetMapping("/search")
+    public Collection<ItemDto> getRecommendedItems(@RequestParam String text) {
+        return itemService.getItemsByDescription(text);
+    }
+
+}
